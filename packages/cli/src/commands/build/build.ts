@@ -21,8 +21,20 @@ export async function build({
   const mastraDir = dir ? (dir.startsWith('/') ? dir : join(rootDir, dir)) : join(rootDir, 'src', 'mastra');
   const outputDirectory = join(rootDir, '.mastra');
 
+  if (env) {
+    logger.warn(`The --env flag is deprecated. To start the build output with a custom env use the mastra start --env <env> command instead.
+      `);
+  }
+
+  // You cannot express an "include all js/ts except these" in one single string glob pattern so by default an array is passed to negate test files.
   const defaultToolsPath = join(mastraDir, 'tools/**/*.{js,ts}');
-  const discoveredTools = [defaultToolsPath, ...(tools ?? [])];
+  const defaultToolsIgnorePaths = [
+    `!${join(mastraDir, 'tools/**/*.{test,spec}.{js,ts}')}`,
+    `!${join(mastraDir, 'tools/**/__tests__/**')}`,
+  ];
+  // We pass an array to globby to allow for the aforementioned negations
+  const defaultTools = [defaultToolsPath, ...defaultToolsIgnorePaths];
+  const discoveredTools = [defaultTools, ...(tools ?? [])];
 
   try {
     const fs = new FileService();
@@ -30,7 +42,7 @@ export async function build({
 
     const platformDeployer = await getDeployer(mastraEntryFile, outputDirectory);
     if (!platformDeployer) {
-      const deployer = new BuildBundler(env);
+      const deployer = new BuildBundler();
       deployer.__setLogger(logger);
       await deployer.prepare(outputDirectory);
       await deployer.bundle(mastraEntryFile, outputDirectory, discoveredTools);

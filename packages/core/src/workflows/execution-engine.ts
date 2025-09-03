@@ -1,8 +1,9 @@
 import type { Mastra, SerializedStepFlowEntry } from '..';
+import type { TracingContext } from '../ai-tracing';
 import { MastraBase } from '../base';
 import type { RuntimeContext } from '../di';
 import { RegisteredLogger } from '../logger';
-import type { ChunkType } from '../stream/MastraWorkflowStream';
+import type { ChunkType } from '../stream/types';
 import type { Emitter, StepResult } from './types';
 import type { StepFlowEntry } from '.';
 
@@ -38,6 +39,7 @@ export abstract class ExecutionEngine extends MastraBase {
   abstract execute<TInput, TOutput>(params: {
     workflowId: string;
     runId: string;
+    disableScorers?: boolean;
     graph: ExecutionGraph;
     serializedStepGraph: SerializedStepFlowEntry[];
     input?: TInput;
@@ -49,6 +51,7 @@ export abstract class ExecutionEngine extends MastraBase {
     };
     emitter: Emitter;
     runtimeContext: RuntimeContext;
+    tracingContext?: TracingContext;
     retryConfig?: {
       attempts?: number;
       delay?: number;

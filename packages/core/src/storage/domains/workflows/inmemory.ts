@@ -1,4 +1,4 @@
-import type { WorkflowRunState } from '../../../workflows';
+import type { StepResult, WorkflowRunState } from '../../../workflows';
 import { TABLE_WORKFLOW_SNAPSHOT } from '../../constants';
 import type { StorageWorkflowRun, WorkflowRun, WorkflowRuns } from '../../types';
 import type { StoreOperations } from '../operations';
@@ -14,6 +14,119 @@ export class WorkflowsInMemory extends WorkflowsStorage {
     super();
     this.collection = collection;
     this.operations = operations;
+  }
+
+  async updateWorkflowResults({
+    workflowName,
+    runId,
+    stepId,
+    result,
+    runtimeContext,
+  }: {
+    workflowName: string;
+    runId: string;
+    stepId: string;
+    result: StepResult<any, any, any, any>;
+    runtimeContext: Record<string, any>;
+  }): Promise<Record<string, StepResult<any, any, any, any>>> {
+    this.logger.debug(`MockStore: updateWorkflowResults called for ${workflowName} ${runId} ${stepId}`, result);
+    const run = this.collection.get(`${workflowName}-${runId}`);
+
+    if (!run) {
+      return {};
+    }
+
+    let snapshot;
+    if (!run.snapshot) {
+      snapshot = {
+        context: {},
+        activePaths: [],
+        timestamp: Date.now(),
+        suspendedPaths: {},
+        serializedStepGraph: [],
+        value: {},
+        waitingPaths: {},
+        status: 'pending',
+        runId: run.run_id,
+      } as WorkflowRunState;
+
+      this.collection.set(`${workflowName}-${runId}`, {
+        ...run,
+        snapshot,
+      });
+    }
+
+    snapshot = typeof run.snapshot === 'string' ? JSON.parse(run.snapshot) : run.snapshot;
+
+    if (!snapshot || !snapshot?.context) {
+      throw new Error(`Snapshot not found for runId ${runId}`);
+    }
+
+    snapshot.context[stepId] = result;
+    snapshot.runtimeContext = { ...snapshot.runtimeContext, ...runtimeContext };
+
+    this.collection.set(`${workflowName}-${runId}`, {
+      ...run,
+      snapshot: snapshot,
+    });
+
+    return JSON.parse(JSON.stringify(snapshot.context));
+  }
+
+  async updateWorkflowState({
+    workflowName,
+    runId,
+    opts,
+  }: {
+    workflowName: string;
+    runId: string;
+    opts: {
+      status: string;
+      result?: StepResult<any, any, any, any>;
+      error?: string;
+      suspendedPaths?: Record<string, number[]>;
+      waitingPaths?: Record<string, number[]>;
+    };
+  }): Promise<WorkflowRunState | undefined> {
+    const run = this.collection.get(`${workflowName}-${runId}`);
+
+    if (!run) {
+      return;
+    }
+
+    let snapshot;
+    if (!run.snapshot) {
+      snapshot = {
+        context: {},
+        activePaths: [],
+        timestamp: Date.now(),
+        suspendedPaths: {},
+        serializedStepGraph: [],
+        value: {},
+        waitingPaths: {},
+        status: 'pending',
+        runId: run.run_id,
+      } as WorkflowRunState;
+
+      this.collection.set(`${workflowName}-${runId}`, {
+        ...run,
+        snapshot,
+      });
+    } else {
+      snapshot = typeof run.snapshot === 'string' ? JSON.parse(run.snapshot) : run.snapshot;
+    }
+
+    if (!snapshot || !snapshot?.context) {
+      throw new Error(`Snapshot not found for runId ${runId}`);
+    }
+
+    snapshot = { ...snapshot, ...opts };
+    this.collection.set(`${workflowName}-${runId}`, {
+      ...run,
+      snapshot: snapshot,
+    });
+
+    return snapshot;
   }
 
   async persistWorkflowSnapshot({
@@ -33,8 +146,6 @@ export class WorkflowsInMemory extends WorkflowsStorage {
       updatedAt: new Date(),
     };
 
-    console.log('[persistWorkflowSnapshot] args:', { workflowName, runId, snapshot });
-    console.log('[persistWorkflowSnapshot] data:', data);
     await this.operations.insert({
       tableName: TABLE_WORKFLOW_SNAPSHOT,
       record: data,
@@ -73,9 +184,7 @@ export class WorkflowsInMemory extends WorkflowsStorage {
     offset?: number;
     resourceId?: string;
   } = {}): Promise<WorkflowRuns> {
-    console.log(`[getWorkflowRuns] called with`, { workflowName, fromDate, toDate, limit, offset, resourceId });
     let runs = Array.from(this.collection.values());
-    console.log(`[getWorkflowRuns] initial runs:`, runs);
 
     if (workflowName) runs = runs.filter((run: any) => run.workflow_name === workflowName);
     if (fromDate && toDate) {
@@ -91,7 +200,6 @@ export class WorkflowsInMemory extends WorkflowsStorage {
     }
     if (resourceId) runs = runs.filter((run: any) => run.resourceId === resourceId);
 
-    console.log(`[getWorkflowRuns] after filtering:`, runs);
     const total = runs.length;
 
     // Sort by createdAt
@@ -114,7 +222,6 @@ export class WorkflowsInMemory extends WorkflowsStorage {
       workflowName: run.workflow_name,
     }));
 
-    console.log(`[getWorkflowRuns] parsedRuns:`, parsedRuns);
     return { runs: parsedRuns as WorkflowRun[], total };
   }
 
@@ -125,12 +232,8 @@ export class WorkflowsInMemory extends WorkflowsStorage {
     runId: string;
     workflowName?: string;
   }): Promise<WorkflowRun | null> {
-    console.log(`[getWorkflowRunById] called for runId ${runId}, workflowName ${workflowName}`);
-    let run = Array.from(this.collection.values()).find((r: any) => r.run_id === runId);
-
-    if (run && workflowName && run.workflow_name !== workflowName) {
-      run = undefined; // Not found if workflowName doesn't match
-    }
+    const runs = Array.from(this.collection.values()).filter((r: any) => r.run_id === runId);
+    let run = runs.find((r: any) => r.workflow_name === workflowName);
 
     if (!run) return null;
 
@@ -144,7 +247,6 @@ export class WorkflowsInMemory extends WorkflowsStorage {
       workflowName: run.workflow_name,
     };
 
-    console.log(`[getWorkflowRunById] parsedRun:`, parsedRun);
     return parsedRun as WorkflowRun;
   }
 }

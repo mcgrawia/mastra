@@ -44,6 +44,18 @@ export default withGT(
             destination: "/api/copilotkit",
           },
           {
+            source: "/en/docs/api/feedback",
+            destination: "/api/feedback",
+          },
+          {
+            source: "/ja/docs/api/feedback",
+            destination: "/api/feedback",
+          },
+          {
+            source: "/docs/api/feedback",
+            destination: "/api/feedback",
+          },
+          {
             source: "/:locale/docs/_next/:path+",
             destination: "/_next/:path+",
           },
@@ -127,8 +139,8 @@ export default withGT(
         permanent: true,
       },
       {
-        source: "/docs/deployment/deployment",
-        destination: "/docs/deployment/serverless-platforms",
+        source: "/:locale/docs/deployment/deployment",
+        destination: "/:locale/docs/deployment/serverless-platforms",
         permanent: true,
       },
       {
@@ -728,6 +740,76 @@ export default withGT(
       {
         source: "/examples/workflows/agent-and-tool-interop",
         destination: "/examples/workflows/agent-as-step",
+        permanent: true,
+      },
+      {
+        source: "/reference/agents/createTool",
+        destination: "/reference/tools/create-tool",
+        permanent: true,
+      },
+      {
+        source: "/reference/workflows/start",
+        destination: "/reference/workflows/run-methods/start",
+        permanent: true,
+      },
+      {
+        source: "/reference/workflows/streamVNext",
+        destination: "/reference/workflows/run-methods/streamVNext",
+        permanent: true,
+      },
+      {
+        source: "/reference/workflows/resume",
+        destination: "/reference/workflows/run-methods/resume",
+        permanent: true,
+      },
+      {
+        source: "/reference/workflows/watch",
+        destination: "/reference/workflows/run-methods/watch",
+        permanent: true,
+      },
+      {
+        source: "/reference/workflows/stream",
+        destination: "/reference/workflows/run-methods/stream",
+        permanent: true,
+      },
+      {
+        source: "/reference/workflows/snapshots",
+        destination: "/docs/server-db/snapshots",
+        permanent: true,
+      },
+      {
+        source: "/examples/agents/hierarchical-multi-agent",
+        destination: "/examples/agents/supervisor-agent",
+        permanent: true,
+      },
+      {
+        source: "/docs/agents/streaming",
+        destination: "/docs/streaming/overview",
+        permanent: true,
+      },
+      {
+        source: "/docs/workflows/streaming",
+        destination: "/docs/streaming/overview",
+        permanent: true,
+      },
+      {
+        source: "/examples/memory/streaming-working-memory",
+        destination: "/examples/memory/working-memory-basic",
+        permanent: true,
+      },
+      {
+        source: "/examples/memory/streaming-working-memory-advanced",
+        destination: "/examples/memory/working-memory-template",
+        permanent: true,
+      },
+      {
+        source: "/examples/memory/streaming-working-memory-structured",
+        destination: "/examples/memory/working-memory-schema",
+        permanent: true,
+      },
+      {
+        source: "/examples/memory/use-chat",
+        destination: "/examples/agents/ai-sdk-v5-integration",
         permanent: true,
       },
     ],

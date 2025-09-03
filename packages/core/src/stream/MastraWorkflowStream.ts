@@ -1,12 +1,7 @@
 import { ReadableStream } from 'stream/web';
 import type { Run } from '../workflows';
-
-export type ChunkType = {
-  type: string;
-  runId: string;
-  from: string;
-  payload: Record<string, any>;
-};
+import type { ChunkType } from './types';
+import { ChunkFrom } from './types';
 
 export class MastraWorkflowStream extends ReadableStream<ChunkType> {
   #usageCount = {
@@ -73,41 +68,42 @@ export class MastraWorkflowStream extends ReadableStream<ChunkType> {
         });
 
         controller.enqueue({
-          type: 'start',
+          type: 'workflow-start',
           runId: run.runId,
-          from: 'WORKFLOW',
+          from: ChunkFrom.WORKFLOW,
           payload: {},
         });
 
-        const stream = await createStream(writer);
+        const stream: ReadableStream<ChunkType> = await createStream(writer);
 
         for await (const chunk of stream) {
           // update the usage count
-          if (
-            (chunk.type === 'step-output' &&
-              chunk.payload?.output?.from === 'AGENT' &&
-              chunk.payload?.output?.type === 'finish') ||
-            (chunk.type === 'step-output' &&
-              chunk.payload?.output?.from === 'WORKFLOW' &&
-              chunk.payload?.output?.type === 'finish')
-          ) {
-            const finishPayload = chunk.payload?.output.payload;
-            updateUsageCount(finishPayload.usage);
+          if (chunk.type === 'step-finish') {
+            updateUsageCount(chunk.payload.usage);
           }
 
           controller.enqueue(chunk);
         }
 
         controller.enqueue({
-          type: 'finish',
+          type: 'workflow-finish',
           runId: run.runId,
-          from: 'WORKFLOW',
+          from: ChunkFrom.WORKFLOW,
           payload: {
-            totalUsage: this.#usageCount,
+            stepResult: {
+              reason: 'stop',
+            },
+            output: {
+              usage: this.#usageCount as any,
+            },
+            metadata: {},
+            messages: {
+              all: [],
+              user: [],
+              nonUser: [],
+            },
           },
         });
-
-        stream;
 
         controller.close();
         deferredPromise.resolve();

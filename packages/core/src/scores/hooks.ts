@@ -1,3 +1,4 @@
+import type { TracingContext } from '../ai-tracing';
 import { AvailableHooks, executeHook } from '../hooks';
 import type { MastraScorerEntry } from './base';
 import type { ScoringEntityType, ScoringHookInput, ScoringSource } from './types';
@@ -9,21 +10,27 @@ export function runScorer({
   input,
   output,
   runtimeContext,
+  tracingContext,
   entity,
   structuredOutput,
   source,
   entityType,
+  threadId,
+  resourceId,
 }: {
   scorerId: string;
   scorerObject: MastraScorerEntry;
   runId: string;
-  input: Record<string, any>[];
-  output: Record<string, any>;
+  input: any;
+  output: any;
   runtimeContext: Record<string, any>;
+  tracingContext?: TracingContext;
   entity: Record<string, any>;
   structuredOutput: boolean;
   source: ScoringSource;
   entityType: ScoringEntityType;
+  threadId?: string;
+  resourceId?: string;
 }) {
   let shouldExecute = false;
 
@@ -54,11 +61,14 @@ export function runScorer({
     input,
     output,
     runtimeContext: Object.fromEntries(runtimeContext.entries()),
+    tracingContext,
     runId,
     source,
     entity,
     structuredOutput,
     entityType,
+    threadId,
+    resourceId,
   };
 
   executeHook(AvailableHooks.ON_SCORER_RUN, payload);

@@ -2,10 +2,11 @@ import alias from '@rollup/plugin-alias';
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import nodeResolve from '@rollup/plugin-node-resolve';
+import esmShim from '@rollup/plugin-esm-shim';
 import { fileURLToPath } from 'node:url';
 import { rollup, type InputOptions, type OutputOptions } from 'rollup';
-import esbuild from 'rollup-plugin-esbuild';
-
+import { esbuild } from './plugins/esbuild';
+import { optimizeLodashImports } from '@optimize-lodash/rollup-plugin';
 import type { analyzeBundle } from './analyze';
 import { removeDeployer } from './plugins/remove-deployer';
 import { tsConfigPaths } from './plugins/tsconfig-paths';
@@ -15,7 +16,7 @@ export async function getInputOptions(
   analyzedBundleInfo: Awaited<ReturnType<typeof analyzeBundle>>,
   platform: 'node' | 'browser',
   env: Record<string, string> = { 'process.env.NODE_ENV': JSON.stringify('production') },
-  { sourcemap = false }: { sourcemap?: boolean } = {},
+  { sourcemap = false, enableEsmShim = true }: { sourcemap?: boolean; enableEsmShim?: boolean } = {},
 ): Promise<InputOptions> {
   let nodeResolvePlugin =
     platform === 'node'
@@ -29,7 +30,6 @@ export async function getInputOptions(
         });
 
   const externalsCopy = new Set<string>();
-  debugger;
   // make all nested imports external from the same package
   for (const external of analyzedBundleInfo.externalDependencies) {
     if (external.startsWith('@')) {
@@ -51,7 +51,6 @@ export async function getInputOptions(
     preserveSymlinks: true,
     external: externals,
     plugins: [
-      tsConfigPaths(),
       {
         name: 'alias-optimized-deps',
         // @ts-ignore
@@ -94,6 +93,7 @@ export async function getInputOptions(
           { find: /^\#mastra$/, replacement: normalizedEntryFile },
         ],
       }),
+      tsConfigPaths(),
       {
         name: 'tools-rewriter',
         resolveId(id: string) {
@@ -106,11 +106,10 @@ export async function getInputOptions(
         },
       },
       esbuild({
-        target: 'node20',
         platform,
-        minify: false,
         define: env,
       }),
+      optimizeLodashImports(),
       commonjs({
         extensions: ['.js', '.ts'],
         transformMixedEsModules: true,
@@ -118,6 +117,7 @@ export async function getInputOptions(
           return externals.includes(id);
         },
       }),
+      enableEsmShim ? esmShim() : undefined,
       nodeResolvePlugin,
       // for debugging
       // {
@@ -138,9 +138,7 @@ export async function getInputOptions(
       // treeshake unused imports
       esbuild({
         include: entryFile,
-        target: 'node20',
         platform,
-        minify: false,
       }),
     ].filter(Boolean),
   } satisfies InputOptions;
