@@ -1,5 +1,15 @@
 # @mastra/deployer
 
+## 0.16.1-alpha.0
+
+### Patch Changes
+
+- Updated dependencies [4dda259]
+- Updated dependencies [defed1c]
+- Updated dependencies [6991ced]
+  - @mastra/core@0.16.1-alpha.0
+  - @mastra/server@0.16.1-alpha.0
+
 ## 0.16.0
 
 ### Minor Changes

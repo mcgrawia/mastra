@@ -1,5 +1,15 @@
 # @mastra/core
 
+## 0.16.1-alpha.0
+
+### Patch Changes
+
+- 4dda259: Revert "feat(mcp): add createMCPTool helper for proper execute types"
+- defed1c: Pass mastra instance into MCP Server tools
+- 6991ced: Fix image input handling for Google Gemini models in AI SDK V5
+
+  Resolves issue #7362 where Gemini threw `AI_InvalidDataContentError` when receiving URLs in image parts. The fix properly handles V3 message file parts that contain both URL and data fields, ensuring URLs are passed as URLs rather than being incorrectly treated as base64 data.
+
 ## 0.16.0
 
 ### Minor Changes

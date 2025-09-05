@@ -81,5 +81,9 @@
     "@mastra/voice-speechify": "0.11.4",
     "@mastra/inngest": "0.13.0"
   },
-  "changesets": []
+  "changesets": [
+    "rotten-views-build",
+    "sweet-parrots-relax",
+    "true-dingos-cough"
+  ]
 }

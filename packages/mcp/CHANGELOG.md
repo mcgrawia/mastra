@@ -1,5 +1,15 @@
 # @mastra/mcp
 
+## 0.11.5-alpha.0
+
+### Patch Changes
+
+- 4dda259: Revert "feat(mcp): add createMCPTool helper for proper execute types"
+- Updated dependencies [4dda259]
+- Updated dependencies [defed1c]
+- Updated dependencies [6991ced]
+  - @mastra/core@0.16.1-alpha.0
+
 ## 0.11.4
 
 ### Patch Changes
